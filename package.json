@@ -18,6 +18,8 @@
   },
   "scripts": {
     "build": "yarn tsc",
-    "start": "yarn build && node ./build/index.js"
+    "start": "yarn build && node ./build/index.js",
+    "docker-build": "docker buildx build --platform=linux/amd64 -t bureauapi .",
+    "docker-push": "sh ./docker.sh"
   }
 }

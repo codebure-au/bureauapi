@@ -6,8 +6,4 @@ const router = Router();
 
 router.use("/auth", authRouter);
 
-router.get("/", (req, res) => res.send("OK"));
-
-router.get("/authed", authenticationMiddleware, (req, res) => res.send("OK"));
-
 export default router;
