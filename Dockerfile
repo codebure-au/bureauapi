@@ -12,4 +12,6 @@ RUN yarn build
 
 EXPOSE 3000
 
+ENV ENVIRONMENT docker
+
 CMD ["npm", "start"]

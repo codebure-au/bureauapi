@@ -1,33 +1,24 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  GetCommand,
-  PutCommand,
-} from "@aws-sdk/lib-dynamodb";
-
+import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import {
   InvalidClientError,
   InvalidTokenError,
   ServerError,
 } from "oauth2-server";
 
-const ddbClient = new DynamoDBClient({ region: "ap-southeast-2" });
-const marshallOptions = {
-  convertEmptyValues: false,
-  removeUndefinedValues: true,
-  convertClassInstanceToMap: false,
-};
-const unmarshallOptions = {
-  wrapNumbers: false,
-};
-const translateConfig = { marshallOptions, unmarshallOptions };
-const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, translateConfig);
+import ddbDocClient from "../dynamo";
 
 let cachedClients: Record<string, StoredOAuthClient> = {};
+let cachedValidTokens: Record<string, StoredOAuthToken> = {};
+let cachedInvalidTokens: string[] = [];
 
 setInterval(() => {
   cachedClients = {};
-}, 1000 * 60 * 5);
+}, 1000 * 60 * 60);
+
+setInterval(() => {
+  cachedValidTokens = {};
+  cachedInvalidTokens = [];
+}, 1000 * 60 * 2.5);
 
 const getClientFromId = async (clientId: string) => {
   if (cachedClients[clientId]) return cachedClients[clientId];
@@ -44,6 +35,10 @@ const getClientFromId = async (clientId: string) => {
 };
 
 const getTokenFromAccessToken = async (accessToken: string) => {
+  if (cachedValidTokens[accessToken]) return cachedValidTokens[accessToken];
+  if (cachedInvalidTokens.includes(accessToken))
+    throw new InvalidTokenError("Token Invalid.");
+
   const params = {
     TableName: "bure_oauth_tokens",
     Key: {
@@ -121,8 +116,12 @@ const model: OAuthModel = {
     // return token response from access token
     const Item = await getTokenFromAccessToken(token);
 
-    if (!Item || Item.accessTokenExpiresAt < Date.now())
+    if (!Item || Item.accessTokenExpiresAt < Date.now()) {
+      cachedInvalidTokens = [...cachedInvalidTokens, token];
       throw new InvalidTokenError("Token Invalid");
+    } else if (!cachedValidTokens[token]) {
+      cachedValidTokens[token] = Item;
+    }
 
     const { accessToken, accessTokenExpiresAt, scope, clientId, clientGrants } =
       Item;

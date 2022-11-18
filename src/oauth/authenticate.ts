@@ -2,6 +2,7 @@ import { Handler } from "express";
 import { Request, Response, OAuthError } from "oauth2-server";
 
 import oauth from "./";
+import log from "../log";
 
 const authenticationMiddleware: Handler = async (req, res, next) => {
   try {
@@ -13,7 +14,7 @@ const authenticationMiddleware: Handler = async (req, res, next) => {
     next();
   } catch (e: any) {
     const error: OAuthError = e;
-    console.log("authentication error", error);
+    log.error("authentication error", error);
     res.status(error.code).send("Unauthorized");
   }
 };

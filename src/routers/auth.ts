@@ -2,6 +2,7 @@ import { Router } from "express";
 import { OAuthError, Request, Response } from "oauth2-server";
 
 import oauth from "../oauth";
+import log from "../log";
 
 const router = Router();
 
@@ -12,12 +13,12 @@ router.post("/token", async (req, res) => {
 
     const token = await oauth.token(request, response);
 
-    console.log("got token", token);
+    log.debug("got token", token);
 
     res.status(response.status || 200).send(response.body);
   } catch (e: any) {
     const error: OAuthError = e;
-    console.log("got error generating token", error);
+    log.error("got error generating token", error);
 
     res.status(error.code).send(error.message);
   }
