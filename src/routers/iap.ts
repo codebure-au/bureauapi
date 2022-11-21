@@ -1,30 +1,40 @@
 import { Router } from "express";
 import axios, { AxiosError } from "axios";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 
+import ddbDocClient from "../dynamo";
 import authenticator from "../oauth/authenticate";
 import log from "../log";
 import ErrorWithStatus from "../error/ErrorWithStatus";
 
 const iosSecret = process.env["IOS_SECRET"];
 
-const router = Router();
+const logAppleTransaction = async (receipt: AppleLatestReceipt) => {
+  try {
+    if (!receipt) throw new Error("no receipt provided");
 
-interface AppleValidationResponse {
-  environment: "Sandbox" | "Production";
-  "is-retryable": boolean;
-  latest_receipt: string;
-  latest_receipt_info: any[];
-  pending_renewal_info: any[];
-  receipt: any;
-  status: number;
-}
+    const params = {
+      TableName: "bure_apple_transactions",
+      Item: receipt,
+    };
+
+    await ddbDocClient.send(new PutCommand(params));
+
+    return true;
+  } catch (e) {
+    log.error("failed to log apple transaction", e);
+    return false;
+  }
+};
+
+const router = Router();
 
 router.use(authenticator("iap"));
 
 router.post<
   "/ios",
   {},
-  AppleValidationResponse | { error: string },
+  { receipt: any; transactionLogged: boolean } | { error: string },
   { receipt: string }
 >("/ios", async (req, res) => {
   try {
@@ -37,7 +47,7 @@ router.post<
     const validateReceipt = async (
       receipt: string,
       development = false
-    ): Promise<AppleValidationResponse> => {
+    ): Promise<{ receipt: any; transactionLogged: boolean }> => {
       const validationUrl = development
         ? `https://sandbox.itunes.apple.com/verifyReceipt`
         : `https://buy.itunes.apple.com/verifyReceipt`;
@@ -58,7 +68,12 @@ router.post<
         return await validateReceipt(receipt, true);
       }
 
-      return data;
+      const transactionLogged =
+        data.environment === "Production"
+          ? await logAppleTransaction(data.latest_receipt_info[0])
+          : false;
+
+      return { receipt: data.receipt, transactionLogged };
     };
 
     const response = await validateReceipt(receipt);
