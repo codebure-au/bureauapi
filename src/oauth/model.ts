@@ -6,6 +6,7 @@ import {
 } from "oauth2-server";
 
 import ddbDocClient from "../dynamo";
+import log from "../log";
 
 let cachedClients: Record<string, StoredOAuthClient> = {};
 let cachedValidTokens: Record<string, StoredOAuthToken> = {};
@@ -108,9 +109,15 @@ const model: OAuthModel = {
       throw new ServerError("Error saving token");
     }
   },
-  validateScope: (user, client, scope) => {
+  validateScope: async (user, client, scope) => {
     // check if scope is valid for client/user
-    return scope;
+    log.debug("validating scope", user, client, scope);
+    const storedClient = await getClientFromId(client.id);
+
+    const validScopes = storedClient.scope.split(" ");
+
+    if (validScopes.includes(scope)) return scope;
+    else return false;
   },
   getAccessToken: async (token) => {
     // return token response from access token
@@ -146,7 +153,21 @@ const model: OAuthModel = {
     const client = await getClientFromId(accessToken.client.id);
     const validScopes = client.scope.split(" ");
 
-    return validScopes.includes(scope);
+    log.debug("verifying scope", validScopes, scope, accessToken);
+
+    // can client use requested scope?
+    if (validScopes.includes(scope)) {
+      // is client authorised to use this scope?
+      const authorisedScopes = accessToken.scope
+        ? Array.isArray(accessToken.scope)
+          ? accessToken.scope
+          : accessToken.scope.split(" ")
+        : undefined;
+
+      if (authorisedScopes?.includes(scope)) return true;
+    }
+
+    return false;
   },
 };
 

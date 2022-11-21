@@ -10,7 +10,7 @@ interface OAuthModel {
     user: OAuthUser,
     client: OAuthClient,
     scope: string
-  ) => string | false;
+  ) => Promise<string | false>;
   getAccessToken: (accessToken: string) => Promise<OAuthTokenResponse>;
   verifyScope: (
     accessToken: OAuthTokenResponse,

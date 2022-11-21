@@ -32,6 +32,7 @@ router.post<
 
     if (!iosSecret)
       throw new ErrorWithStatus("no ios secret in environment variables", 500);
+    if (!receipt) throw new ErrorWithStatus("no receipt in request body", 400);
 
     const validateReceipt = async (
       receipt: string,

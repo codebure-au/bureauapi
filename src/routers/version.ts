@@ -51,7 +51,7 @@ router.post<
   { appId: string },
   any,
   { ios: string; android: string }
->("/:appId", authenticator(), async (req, res) => {
+>("/:appId", authenticator("admin"), async (req, res) => {
   try {
     const validateVersionFormat = (version: string) => {
       const validationRegEx =
