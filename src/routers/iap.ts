@@ -35,9 +35,8 @@ router.post<
   "/ios",
   {},
   | {
-      receipt: any;
+      validationResponse: AppleValidationResponse;
       transactionLogged: boolean;
-      environment: "Sandbox" | "Production";
     }
   | { error: string },
   { receipt: string }
@@ -53,9 +52,8 @@ router.post<
       receipt: string,
       development = false
     ): Promise<{
-      receipt: any;
+      validationResponse: AppleValidationResponse;
       transactionLogged: boolean;
-      environment: "Sandbox" | "Production";
     }> => {
       const validationUrl = development
         ? `https://sandbox.itunes.apple.com/verifyReceipt`
@@ -83,9 +81,8 @@ router.post<
           : false;
 
       return {
-        receipt: data.receipt,
+        validationResponse: data,
         transactionLogged,
-        environment: data.environment,
       };
     };
 
