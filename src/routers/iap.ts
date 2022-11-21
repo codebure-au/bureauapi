@@ -34,7 +34,12 @@ router.use(authenticator("iap"));
 router.post<
   "/ios",
   {},
-  { receipt: any; transactionLogged: boolean } | { error: string },
+  | {
+      receipt: any;
+      transactionLogged: boolean;
+      environment: "Sandbox" | "Production";
+    }
+  | { error: string },
   { receipt: string }
 >("/ios", async (req, res) => {
   try {
@@ -47,7 +52,11 @@ router.post<
     const validateReceipt = async (
       receipt: string,
       development = false
-    ): Promise<{ receipt: any; transactionLogged: boolean }> => {
+    ): Promise<{
+      receipt: any;
+      transactionLogged: boolean;
+      environment: "Sandbox" | "Production";
+    }> => {
       const validationUrl = development
         ? `https://sandbox.itunes.apple.com/verifyReceipt`
         : `https://buy.itunes.apple.com/verifyReceipt`;
@@ -73,7 +82,11 @@ router.post<
           ? await logAppleTransaction(data.latest_receipt_info[0])
           : false;
 
-      return { receipt: data.receipt, transactionLogged };
+      return {
+        receipt: data.receipt,
+        transactionLogged,
+        environment: data.environment,
+      };
     };
 
     const response = await validateReceipt(receipt);
