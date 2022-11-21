@@ -45,6 +45,7 @@ interface StoredOAuthClient {
   id: string;
   clientSecret: string;
   grants: string;
+  scope: string;
 }
 
 interface StoredOAuthToken extends OAuthToken {

@@ -143,7 +143,10 @@ const model: OAuthModel = {
   },
   verifyScope: async (accessToken, scope) => {
     // verify whether token can access requested scope
-    return true;
+    const client = await getClientFromId(accessToken.client.id);
+    const validScopes = client.scope.split(" ");
+
+    return validScopes.includes(scope);
   },
 };
 

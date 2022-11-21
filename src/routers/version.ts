@@ -1,13 +1,19 @@
 import { Router } from "express";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
-import authenticationMiddleware from "../oauth/authenticate";
+import authenticator from "../oauth/authenticate";
 import ddbDocClient from "../dynamo";
 import log from "../log";
 import UserError from "../error/UserError";
 import ErrorWithStatus from "../error/ErrorWithStatus";
 
 const router = Router();
+
+let cachedAppVersions: Record<string, AppVersionData> = {};
+
+setInterval(() => {
+  cachedAppVersions = {};
+}, 1000 * 60 * 60);
 
 router.get<{ appId: string }>("/:appId", async (req, res) => {
   try {
@@ -30,6 +36,8 @@ router.get<{ appId: string }>("/:appId", async (req, res) => {
 
     const { ios, android } = Item as AppVersionData;
 
+    cachedAppVersions[appId] = { appId, ios, android };
+
     res.json({ appId, ios, android });
   } catch (e: any) {
     const error: UserError = e;
@@ -43,7 +51,7 @@ router.post<
   { appId: string },
   any,
   { ios: string; android: string }
->("/:appId", authenticationMiddleware, async (req, res) => {
+>("/:appId", authenticator(), async (req, res) => {
   try {
     const validateVersionFormat = (version: string) => {
       const validationRegEx =
