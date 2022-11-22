@@ -36,3 +36,21 @@ interface AppleLatestReceipt {
   web_order_line_item_id: string;
   transaction_id: string;
 }
+
+interface GoogleValidationResponse {
+  isSuccessful: boolean;
+  errorMessage?: string;
+  payload: GoogleProductPurchase;
+}
+
+interface GoogleProductPurchase {
+  code: number;
+  message: string;
+  kind: string;
+  purchaseTimeMillis: number;
+  purchaseState: number;
+  consumptionState: number;
+  developerPayload: string;
+  orderId: string;
+  purchaseType: number;
+}
