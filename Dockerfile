@@ -14,4 +14,4 @@ EXPOSE 3000
 
 ENV ENVIRONMENT docker
 
-CMD ["npm", "start"]
+CMD ["npm", "./build/index.js"]

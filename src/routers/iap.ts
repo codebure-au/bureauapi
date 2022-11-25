@@ -10,18 +10,16 @@ import log from "../log";
 import ErrorWithStatus from "../error/ErrorWithStatus";
 
 const iosSecret = process.env["IOS_SECRET"];
-let publisher: androidpublisher_v3.Androidpublisher;
 
-getGoogleAuth().then((authFile) => {
+const getPublisher = async () => {
+  const authFile = await getGoogleAuth();
   const googleAuth = new auth.GoogleAuth({
     credentials: authFile,
     scopes: ["https://www.googleapis.com/auth/androidpublisher"],
   });
 
-  publisher = new androidpublisher_v3.Androidpublisher({ auth: googleAuth });
-
-  log.debug("established android publisher");
-});
+  return new androidpublisher_v3.Androidpublisher({ auth: googleAuth });
+};
 
 const logAppleTransaction = async (receipt: AppleLatestReceipt) => {
   try {
@@ -145,6 +143,7 @@ router.post<
 >("/android", async (req, res) => {
   try {
     const { purchaseToken, packageName, productId } = req.body;
+    const publisher = await getPublisher();
 
     if (!publisher)
       throw new ErrorWithStatus("no google verification available", 500);
