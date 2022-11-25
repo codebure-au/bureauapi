@@ -2,14 +2,14 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from "@aws-sdk/client-secrets-manager";
-import log from "../log";
+import google from "googleapis";
 
 const secretsClient = new SecretsManagerClient({ region: "ap-southeast-2" });
 
-let privateKey: string;
+let cachedGoogleAuth: google.Auth.CredentialBody;
 
-export const getPrivateKey = async () => {
-  if (privateKey) return privateKey;
+export const getGoogleAuth = async () => {
+  if (cachedGoogleAuth) return cachedGoogleAuth;
 
   const command = new GetSecretValueCommand({
     SecretId: "bure/google/verifier",
@@ -17,10 +17,9 @@ export const getPrivateKey = async () => {
   const { SecretString } = await secretsClient.send(command);
 
   if (SecretString) {
-    const jsonObject = JSON.parse(SecretString);
-    const newPrivateKey = jsonObject.google_verifier_private_key as string;
+    const jsonObject = JSON.parse(SecretString) as google.Auth.CredentialBody;
 
-    privateKey = newPrivateKey;
-    return newPrivateKey;
+    cachedGoogleAuth = jsonObject;
+    return jsonObject;
   }
 };

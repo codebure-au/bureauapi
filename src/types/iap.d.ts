@@ -37,20 +37,14 @@ interface AppleLatestReceipt {
   transaction_id: string;
 }
 
-interface GoogleValidationResponse {
-  isSuccessful: boolean;
-  errorMessage?: string;
-  payload: GoogleProductPurchase;
-}
-
 interface GoogleProductPurchase {
-  code: number;
-  message: string;
   kind: string;
-  purchaseTimeMillis: number;
+  purchaseTimeMillis: string;
   purchaseState: number;
   consumptionState: number;
   developerPayload: string;
   orderId: string;
-  purchaseType: number;
+  purchaseType?: number;
+  acknowledgementState: number;
+  regionCode: string;
 }

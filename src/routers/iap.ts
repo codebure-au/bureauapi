@@ -1,16 +1,27 @@
 import { Router } from "express";
 import axios, { AxiosError } from "axios";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import GoogleReceiptVerify from "google-play-billing-validator";
+import { auth, androidpublisher_v3 } from "@googleapis/androidpublisher";
 
 import ddbDocClient from "../dynamo";
-import { getPrivateKey } from "../secrets-manager";
+import { getGoogleAuth } from "../secrets-manager";
 import authenticator from "../oauth/authenticate";
 import log from "../log";
 import ErrorWithStatus from "../error/ErrorWithStatus";
 
 const iosSecret = process.env["IOS_SECRET"];
-import { googleVerifierEmail } from "../config.json";
+let publisher: androidpublisher_v3.Androidpublisher;
+
+getGoogleAuth().then((authFile) => {
+  const googleAuth = new auth.GoogleAuth({
+    credentials: authFile,
+    scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+  });
+
+  publisher = new androidpublisher_v3.Androidpublisher({ auth: googleAuth });
+
+  log.debug("established android publisher");
+});
 
 const logAppleTransaction = async (receipt: AppleLatestReceipt) => {
   try {
@@ -121,10 +132,10 @@ router.post<
   "/android",
   {},
   | {
-      validationResponse: GoogleValidationResponse;
+      validationResponse: any;
       transactionLogged: boolean;
     }
-  | { error: string },
+  | string,
   {
     purchaseToken: string;
     packageName: string;
@@ -133,10 +144,10 @@ router.post<
   }
 >("/android", async (req, res) => {
   try {
-    const { purchaseToken, packageName, productId, development } = req.body;
-    const privateKey = await getPrivateKey();
+    const { purchaseToken, packageName, productId } = req.body;
 
-    if (!privateKey) throw new ErrorWithStatus("no private key available", 500);
+    if (!publisher)
+      throw new ErrorWithStatus("no google verification available", 500);
     if (!purchaseToken)
       throw new ErrorWithStatus("no purchaseToken in request body", 400);
     if (!packageName)
@@ -144,26 +155,22 @@ router.post<
     if (!productId)
       throw new ErrorWithStatus("no productId in request body", 400);
 
-    const receiptVerify = new GoogleReceiptVerify({
-      email: googleVerifierEmail,
-      key: privateKey,
-    });
-
-    const response = await receiptVerify.verifyINAPP({
+    const { data } = await publisher.purchases.products.get({
       packageName,
       productId,
-      purchaseToken,
+      token: purchaseToken,
     });
 
-    const transactionLogged = development
-      ? false
-      : await logGoogleTransaction(response.payload);
+    const transactionLogged =
+      data.purchaseType === 0
+        ? false
+        : await logGoogleTransaction(data as GoogleProductPurchase);
 
-    res.json({ transactionLogged, validationResponse: response });
+    res.json({ transactionLogged, validationResponse: data });
   } catch (e: any) {
     const error: AxiosError = e;
     log.error("failed to validate receipt", error);
-    res.status(error.status || 500).json({ error: error.message });
+    res.status(error.status || 500).send(error.message);
   }
 });
 
