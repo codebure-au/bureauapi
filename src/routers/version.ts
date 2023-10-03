@@ -13,7 +13,7 @@ let cachedAppVersions: Record<string, AppVersionData> = {};
 
 setInterval(() => {
   cachedAppVersions = {};
-}, 1000 * 60 * 60);
+}, 1000 * 60 * 60 * 24);
 
 router.get<{ appId: string }>("/:appId", async (req, res) => {
   try {
