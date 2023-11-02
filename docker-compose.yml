@@ -1,0 +1,10 @@
+version: '3'
+services:
+  bureauapi:
+    restart: always
+    build: .
+    hostname: bureauapi
+    ports:
+      - "3001:3000"
+    volumes:
+      - .aws/credentials:/usr/src/app/.aws/credentials:ro

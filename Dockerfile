@@ -14,4 +14,6 @@ EXPOSE 3000
 
 ENV ENVIRONMENT docker
 
+ENV AWS_SHARED_CREDENTIALS_FILE /usr/src/app/.aws/credentials
+
 CMD ["node", "./build/index.js"]
