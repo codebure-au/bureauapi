@@ -5,5 +5,3 @@ build
 pc-api-*.json
 
 .DS_Store
-
-aws.json
