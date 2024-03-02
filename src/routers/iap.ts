@@ -4,12 +4,14 @@ import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { auth, androidpublisher_v3 } from "@googleapis/androidpublisher";
 
 import ddbDocClient from "../dynamo";
-import { getGoogleAuth } from "../secrets-manager";
+import { getGoogleAuth, getAppleAuth } from "../secrets-manager";
 import authenticator from "../oauth/authenticate";
 import log from "../log";
 import ErrorWithStatus from "../error/ErrorWithStatus";
 
-const iosSecret = process.env["IOS_SECRET"];
+let iosSecret: string | undefined;
+
+getAppleAuth().then((string) => (iosSecret = string));
 
 const getPublisher = async () => {
   const authFile = await getGoogleAuth();

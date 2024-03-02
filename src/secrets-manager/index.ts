@@ -7,6 +7,7 @@ import google from "googleapis";
 const secretsClient = new SecretsManagerClient({ region: "ap-southeast-2" });
 
 let cachedGoogleAuth: google.Auth.CredentialBody;
+let cachedAppleAuth: string;
 
 export const getGoogleAuth = async () => {
   if (cachedGoogleAuth) return cachedGoogleAuth;
@@ -21,5 +22,21 @@ export const getGoogleAuth = async () => {
 
     cachedGoogleAuth = jsonObject;
     return jsonObject;
+  }
+};
+
+export const getAppleAuth = async () => {
+  if (cachedAppleAuth) return cachedAppleAuth;
+
+  const command = new GetSecretValueCommand({
+    SecretId: "bure/apple/shared",
+  });
+  const { SecretString } = await secretsClient.send(command);
+
+  if (SecretString) {
+    const jsonObject = JSON.parse(SecretString) as { sharedSecret: string };
+
+    cachedAppleAuth = jsonObject.sharedSecret;
+    return jsonObject.sharedSecret;
   }
 };
